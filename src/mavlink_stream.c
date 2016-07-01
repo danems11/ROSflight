@@ -38,52 +38,7 @@ static void mavlink_send_imu(void)
                              _imu_temperature);
 }
 
-static void mavlink_send_servo_output_raw(void)
-{
-  mavlink_msg_servo_output_raw_send(MAVLINK_COMM_0,
-                                    micros(),
-                                    0,
-                                    _outputs[0],
-                                    _outputs[1],
-                                    _outputs[2],
-                                    _outputs[3],
-                                    _outputs[4],
-                                    _outputs[5],
-                                    _outputs[6],
-                                    _outputs[7]);
-}
 
-static void mavlink_send_rc_raw(void)
-{
-  mavlink_msg_rc_channels_send(MAVLINK_COMM_0,
-                               millis(),
-                               0,
-                               pwmRead(0),
-                               pwmRead(1),
-                               pwmRead(2),
-                               pwmRead(3),
-                               pwmRead(4),
-                               pwmRead(5),
-                               pwmRead(6),
-                               pwmRead(7),
-                               0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0);
-}
-
-static void mavlink_send_diff_pressure(void)
-{
-  if (_diff_pressure_present)
-  {
-    mavlink_msg_diff_pressure_send(MAVLINK_COMM_0, _diff_pressure, _temperature);
-  }
-}
-
-static void mavlink_send_baro(void)
-{
-  if (_baro_present)
-  {
-    mavlink_msg_small_baro_send(MAVLINK_COMM_0, _baro_pressure, _temperature);
-  }
-}
 
 static void mavlink_send_low_priority(void)
 {
@@ -95,10 +50,6 @@ static mavlink_stream_t mavlink_streams[MAVLINK_STREAM_COUNT] =
 {
   { .period_us = 1e6, .last_time_us = 0, .send_function = mavlink_send_heartbeat },
   { .period_us = 1e3, .last_time_us = 0, .send_function = mavlink_send_imu },
-  { .period_us = 0,   .last_time_us = 0, .send_function = mavlink_send_servo_output_raw },
-  { .period_us = 0,   .last_time_us = 0, .send_function = mavlink_send_rc_raw },
-  { .period_us = 2e5, .last_time_us = 0, .send_function = mavlink_send_diff_pressure },
-  { .period_us = 2e5, .last_time_us = 0, .send_function = mavlink_send_baro },
   { .period_us = 1e5, .last_time_us = 0, .send_function = mavlink_send_low_priority }
 };
 

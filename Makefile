@@ -12,20 +12,14 @@ TURBOTRIG_DIR = lib/turbotrig
 
 # project source files
 PROJECT_SRC = src/main.c \
-              src/estimator.c \
               src/flash.c \
               src/mavlink.c \
               src/mavlink_param.c \
               src/mavlink_receive.c \
               src/mavlink_stream.c \
               src/mavlink_util.c \
-              src/mixer.c \
               src/param.c \
-              src/rc.c \
               src/sensors.c \
-              src/mux.c \
-              src/controller.c \
-              src/mode.c \
 
 ###############################################################################
 
@@ -65,8 +59,6 @@ rosflight2_SRC =$(BREEZY_DIR)/drv_gpio.c \
 			 $(BREEZY_DIR)/drv_ms5611.c \
 		   $(BREEZY_DIR)/printf.c \
 		   $(BREEZY_DIR)/startup_stm32f10x_md_gcc.S \
-		   $(TURBOTRIG_DIR)/turbotrig.c \
-			 $(TURBOTRIG_DIR)/turbovec.c \
 		   $(PROJECT_SRC) \
 		   $(CMSIS_SRC) \
 		   $(STDPERIPH_SRC)

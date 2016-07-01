@@ -77,66 +77,11 @@ static void mavlink_handle_msg_timesync(const mavlink_message_t *const msg)
   }
 }
 
-static void mavlink_handle_msg_offboard_control(const mavlink_message_t *const msg)
-{
-  _offboard_control_time = micros();
-  mavlink_msg_offboard_control_decode(msg, &mavlink_offboard_control);
-
-  // put values into standard message
-  _offboard_control.x.value = mavlink_offboard_control.value1;
-  _offboard_control.y.value = mavlink_offboard_control.value2;
-  _offboard_control.z.value = mavlink_offboard_control.value3;
-  _offboard_control.F.value = mavlink_offboard_control.value4;
-
-  // Move flags into standard message
-  _offboard_control.x.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE1);
-  _offboard_control.y.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE2);
-  _offboard_control.z.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE3);
-  _offboard_control.F.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE4);
-
-  // translate modes into standard message
-  switch (mavlink_offboard_control.mode)
-  {
-  case MODE_PASS_THROUGH:
-    _offboard_control.x.type = PASSTHROUGH;
-    _offboard_control.y.type = PASSTHROUGH;
-    _offboard_control.z.type = PASSTHROUGH;
-    _offboard_control.F.type = THROTTLE;
-    _offboard_control.x.value = mavlink_offboard_control.value1/2;
-    _offboard_control.y.value = mavlink_offboard_control.value2/2;
-    _offboard_control.z.value = mavlink_offboard_control.value3/2;
-    _offboard_control.F.value = mavlink_offboard_control.value4;
-    break;
-  case MODE_ROLLRATE_PITCHRATE_YAWRATE_THROTTLE:
-    _offboard_control.x.type = RATE;
-    _offboard_control.y.type = RATE;
-    _offboard_control.z.type = RATE;
-    _offboard_control.F.type = THROTTLE;
-    break;
-  case MODE_ROLL_PITCH_YAWRATE_THROTTLE:
-    _offboard_control.x.type = ANGLE;
-    _offboard_control.y.type = ANGLE;
-    _offboard_control.z.type = RATE;
-    _offboard_control.F.type = THROTTLE;
-    break;
-  case MODE_ROLL_PITCH_YAWRATE_ALTITUDE:
-    _offboard_control.x.type = ANGLE;
-    _offboard_control.y.type = ANGLE;
-    _offboard_control.z.type = RATE;
-    _offboard_control.F.type = ALTITUDE;
-    break;
-    // Handle error state
-  }
-  _new_command = true;
-}
 
 static void handle_mavlink_message(void)
 {
   switch (in_buf.msgid)
   {
-  case MAVLINK_MSG_ID_OFFBOARD_CONTROL:
-    mavlink_handle_msg_offboard_control(&in_buf);
-    break;
   case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
     mavlink_handle_msg_param_request_list();
     break;

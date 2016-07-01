@@ -66,18 +66,6 @@ void setup(void)
 
   // Initialize Sensors
   init_sensors();
-
-
-  /***********************/
-  /***  Software Setup ***/
-  /***********************/
-
-  // Initialize Motor Mixing
-//  init_mixing();
-
-  // Initialize Estimator
-//  init_estimator(false, true, true);
-//  init_mode();
 }
 
 
@@ -88,13 +76,6 @@ uint32_t average_time = 0;
 void loop(void)
 {
   uint32_t now = micros();
-  /*********************/
-  /***  Pre-Process ***/
-  /*********************/
-  // get loop time
-//  static uint32_t prev_time;
-//  static int32_t dt = 0;
-//  uint32_t now = micros();
 
   /*********************/
   /***  Control Loop ***/
@@ -111,13 +92,4 @@ void loop(void)
 
   // receive mavlink messages
   mavlink_receive();
-
-  // update the armed_states, an internal timer runs this at a fixed rate
-//  check_mode(now); // 0 us
-
-  // get RC, an internal timer runs this every 20 ms (50 Hz)
-//  receive_rc(now); // 1 us
-
-  // update commands (internal logic tells whether or not we should do anything or not)
-//  mux_inputs(); // 3 us
 }
