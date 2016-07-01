@@ -167,13 +167,6 @@ void param_change_callback(param_id_t id)
     break;
   case PARAM_STREAM_IMU_RATE:
     mavlink_stream_set_rate(MAVLINK_STREAM_ID_IMU, _params.values[PARAM_STREAM_IMU_RATE]);
-    break;
-  case PARAM_STREAM_SERVO_OUTPUT_RAW_RATE:
-    mavlink_stream_set_rate(MAVLINK_STREAM_ID_SERVO_OUTPUT_RAW, _params.values[PARAM_STREAM_SERVO_OUTPUT_RAW_RATE]);
-    break;
-  case PARAM_STREAM_RC_RAW_RATE:
-    mavlink_stream_set_rate(MAVLINK_STREAM_ID_RC_RAW, _params.values[PARAM_STREAM_RC_RAW_RATE]);
-  default:
     // no action needed for this parameter
     break;
   }
