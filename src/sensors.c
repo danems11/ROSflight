@@ -34,8 +34,19 @@ static uint32_t baro_next_us;
 
 void imu_ISR(void)
 {
+  static int16_t count = 0;
   _imu_time = micros();
   _imu_ready = true;
+  if (count > 1000/_params.values[PARAM_CAMERA_TRIGGER_RATE])
+  {
+    TRIG_HIGH;
+    count=0;
+  }
+  else
+  {
+    TRIG_LOW;
+    count++;
+  }
 }
 
 
@@ -89,19 +100,6 @@ void init_sensors(void)
 
 bool update_sensors(uint32_t time_us)
 {
-  // using else so that we don't do all sensor updates on the same loop
-  if (_diff_pressure_present && time_us >= diff_press_next_us)
-  {
-    diff_press_next_us += _params.values[PARAM_DIFF_PRESS_UPDATE];
-    ms4525_read(&_diff_pressure, &_temperature);
-  }
-  else if (_baro_present && time_us > baro_next_us)
-  {
-    baro_next_us += _params.values[PARAM_BARO_UPDATE];
-    ms5611_update();
-    _baro_pressure = ms5611_read_pressure();
-    _baro_temperature = ms5611_read_temperature();
-  }
   return update_imu();
 }
 

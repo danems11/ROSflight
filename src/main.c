@@ -58,8 +58,8 @@ void setup(void)
   i2cInit(I2CDEV_2);
 
   // Initialize PWM and RC
-  init_PWM();
-  init_rc();
+//  init_PWM();
+//  init_rc();
 
   // Initialize MAVlink Communication
   init_mavlink();
@@ -73,11 +73,11 @@ void setup(void)
   /***********************/
 
   // Initialize Motor Mixing
-  init_mixing();
+//  init_mixing();
 
   // Initialize Estimator
-  init_estimator(false, true, true);
-  init_mode();
+//  init_estimator(false, true, true);
+//  init_mode();
 }
 
 
@@ -87,32 +87,20 @@ uint32_t average_time = 0;
 
 void loop(void)
 {
+  uint32_t now = micros();
   /*********************/
   /***  Pre-Process ***/
   /*********************/
   // get loop time
-  static uint32_t prev_time;
-  static int32_t dt = 0;
-  uint32_t now = micros();
+//  static uint32_t prev_time;
+//  static int32_t dt = 0;
+//  uint32_t now = micros();
 
   /*********************/
   /***  Control Loop ***/
   /*********************/
   // update sensors - an internal timer runs this at a fixed rate
-  if (update_sensors(now)) // 434 us
-  {
-    //    // loop time calculation
-    dt = now - prev_time;
-    average_time+=dt;
-    counter++;
-
-    // If I have new IMU data, then perform control
-    run_estimator(now); // 234 us (acc and gyro, float-based quad integration, euler propagation)
-    run_controller(now); // 6us
-    mix_output();
-  }
-
-  prev_time = now;
+  update_sensors(now);
 
 
   /*********************/
@@ -125,11 +113,11 @@ void loop(void)
   mavlink_receive();
 
   // update the armed_states, an internal timer runs this at a fixed rate
-  check_mode(now); // 0 us
+//  check_mode(now); // 0 us
 
   // get RC, an internal timer runs this every 20 ms (50 Hz)
-  receive_rc(now); // 1 us
+//  receive_rc(now); // 1 us
 
   // update commands (internal logic tells whether or not we should do anything or not)
-  mux_inputs(); // 3 us
+//  mux_inputs(); // 3 us
 }

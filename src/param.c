@@ -53,6 +53,8 @@ void set_param_defaults(void)
   init_param(PARAM_STREAM_SERVO_OUTPUT_RAW_RATE, "STRM_SERVO", 50);
   init_param(PARAM_STREAM_RC_RAW_RATE, "STRM_RC", 50);
 
+  init_param(PARAM_CAMERA_TRIGGER_RATE, "CAMERA_RATE", 10);
+
   init_param(PARAM_INIT_TIME, "FILTER_INIT_T", 3000); // ms
   init_param(PARAM_FILTER_KP, "FILTER_KP", 10000); // munits
   init_param(PARAM_FILTER_KI, "FILTER_KI", 1000);  // munits
