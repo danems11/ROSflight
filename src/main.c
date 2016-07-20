@@ -5,6 +5,7 @@
 #include <breezystm32/breezystm32.h>
 #include <turbotrig/turbovec.h>
 
+#include "board.h"
 #include "estimator.h"
 #include "mavlink.h"
 #include "mavlink_param.h"
@@ -20,8 +21,6 @@
 
 extern void SetSysClock(bool overclock);
 
-serialPort_t *Serial1;
-
 int main(void)
 {
   // Configure clock, this figures out HSE for hardware autodetect
@@ -30,9 +29,6 @@ int main(void)
 
   // Perform Setup Operations
   setup();
-
-  // Initialize Serial ports
-  Serial1 = uartOpen(USART1, NULL, _params.values[PARAM_BAUD_RATE], MODE_RXTX);
 
   while (1)
   {
@@ -54,7 +50,10 @@ void setup(void)
   /***  Hardware Setup ***/
   /***********************/
 
-  //  // Initialize I2c
+  // Initialize Serial ports
+  init_serial(_params.values[PARAM_BAUD_RATE]);
+
+  // Initialize I2c
   i2cInit(I2CDEV_2);
 
   // Initialize PWM and RC

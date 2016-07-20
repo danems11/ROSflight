@@ -12,6 +12,7 @@ TURBOTRIG_DIR = lib/turbotrig
 
 # project source files
 PROJECT_SRC = src/main.c \
+              src/board.c \
               src/estimator.c \
               src/flash.c \
               src/mavlink.c \
