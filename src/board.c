@@ -1,5 +1,7 @@
 #include <breezystm32/breezystm32.h>
 
+#include "flash.h"
+
 #include "board.h"
 
 #define BOARD_REV 2
@@ -24,4 +26,19 @@ void send_uart_bytes(mavlink_channel_t chan, const uint8_t *buf, uint16_t len)
       serialWrite(Serial1, (uint8_t)buf[i]);
     }
   }
+}
+
+bool init_memory(uint16_t capacity)
+{
+  return initEEPROM(capacity);
+}
+
+bool read_memory(void *dst, uint16_t bytes)
+{
+  return readEEPROM(dst, bytes);
+}
+
+bool write_memory(void *src, uint16_t bytes)
+{
+  return writeEEPROM(src, bytes);
 }

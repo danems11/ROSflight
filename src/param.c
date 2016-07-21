@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "board.h"
 #include "flash.h"
 #include "mavlink.h"
 #include "mavlink_param.h"
@@ -35,7 +36,7 @@ static void init_param_float(param_id_t id, char name[PARAMS_NAME_LENGTH], float
 // function definitions
 void init_params(void)
 {
-  initEEPROM();
+  init_memory(sizeof(params_t)); //! \todo handle initialization failure
   if (!read_params())
   {
     set_param_defaults();
@@ -166,12 +167,64 @@ void set_param_defaults(void)
 
 bool read_params(void)
 {
-  return readEEPROM();
+  params_t temp;
+  uint8_t chk = 0;
+  const uint8_t *p;
+
+  // attempt to read from memory
+  if (!read_memory(&temp, sizeof(params_t)))
+    return false;
+
+  // check version number
+  if (temp.version != PARAM_CONF_VERSION)
+    return false;
+
+  // check size and magic numbers
+  if (temp.size != sizeof(params_t) || temp.magic_be != 0xBE || temp.magic_ef != 0xEF)
+    return false;
+
+  // verify integrity of temporary copy
+  for (p = (const uint8_t *)&temp; p < ((const uint8_t *)&temp + sizeof(params_t)); p++)
+    chk ^= *p;
+
+  if (chk != 0)
+    return false;
+
+  // looks good, let's roll!
+  memcpy(&_params, &temp, sizeof(params_t));
+  return true;
 }
 
 bool write_params(void)
 {
-  return writeEEPROM(true);
+  uint8_t chk = 0;
+  const uint8_t *p;
+
+  // prepare checksum/version constants
+  _params.version = PARAM_CONF_VERSION;
+  _params.size = sizeof(params_t);
+  _params.magic_be = 0xBE;
+  _params.magic_ef = 0xEF;
+  _params.chk = 0;
+
+  // recalculate checksum before writing
+  for (p = (const uint8_t *)&_params; p < ((const uint8_t *)&_params + sizeof(params_t)); p++)
+    chk ^= *p;
+  _params.chk = chk;
+
+  // attempt to write to memory
+  if (!write_memory(&_params, sizeof(params_t)))
+    return false;
+
+  // report success
+//  for (uint8_t i=0; i < 3; i++)
+//  {
+//    LED0_TOGGLE; //! \todo This is Breezy specific!
+//    delay(100);
+//    LED0_TOGGLE;
+//    delay(50);
+//  }
+  return true;
 }
 
 void param_change_callback(param_id_t id)

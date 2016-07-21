@@ -10,6 +10,8 @@ extern "C" {
 
 #define PARAMS_NAME_LENGTH MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN
 
+static const uint8_t PARAM_CONF_VERSION = 76;
+
 typedef enum
 {
   /******************************/

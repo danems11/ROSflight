@@ -19,6 +19,6 @@ void send_uart_bytes(mavlink_channel_t chan, const uint8_t *buf, uint16_t len);
 
 
 // memory
-//bool init_memory(void);
-//bool read_memory(void *dst, uint32_t len);
-//bool write_memory(void *src, uint32_t len);
+bool init_memory(uint16_t capacity);
+bool read_memory(void *dst, uint16_t bytes);
+bool write_memory(void *src, uint16_t bytes);
