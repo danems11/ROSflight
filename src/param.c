@@ -43,17 +43,17 @@ void set_param_defaults(void)
     sprintf(temp_name, "TEMP_%c%c", 'A' + id/10, 'A' + id%10);
     init_param(id, temp_name, id);
   }
-  init_param(PARAM_BOARD_REVISION, "BOARD_REV", 4);
+  init_param(PARAM_BOARD_REVISION, "BOARD_REV", 5);
 
   init_param(PARAM_BAUD_RATE, "BAUD_RATE", 921600);
 
   init_param(PARAM_SYSTEM_ID, "SYS_ID", 1);
   init_param(PARAM_STREAM_HEARTBEAT_RATE, "STRM_HRTBT", 1);
-  init_param(PARAM_STREAM_IMU_RATE, "STRM_IMU", 500);
-  init_param(PARAM_STREAM_SERVO_OUTPUT_RAW_RATE, "STRM_SERVO", 50);
-  init_param(PARAM_STREAM_RC_RAW_RATE, "STRM_RC", 50);
+  init_param(PARAM_STREAM_IMU_RATE, "STRM_IMU", 10);
+  init_param(PARAM_STREAM_SERVO_OUTPUT_RAW_RATE, "STRM_SERVO", 0);
+  init_param(PARAM_STREAM_RC_RAW_RATE, "STRM_RC", 0);
 
-  init_param(PARAM_CAMERA_TRIGGER_RATE, "CAMERA_RATE", 10);
+  init_param(PARAM_CAMERA_TRIGGER_RATE, "CAMERA_RATE", 27);
 
   init_param(PARAM_INIT_TIME, "FILTER_INIT_T", 3000); // ms
   init_param(PARAM_FILTER_KP, "FILTER_KP", 10000); // munits

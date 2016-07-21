@@ -11,6 +11,7 @@ extern int32_t _gyro_scale; // converts to urad/s
 extern int16_t _imu_temperature;
 extern uint32_t _imu_time;
 extern bool _imu_ready;
+extern bool _image_taken;
 
 extern bool _diff_pressure_present;
 extern int16_t _diff_pressure;

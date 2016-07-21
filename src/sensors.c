@@ -15,6 +15,7 @@ int32_t _gyro_scale;
 int16_t _imu_temperature;
 uint32_t _imu_time;
 bool _imu_ready;
+bool _image_taken = false;
 
 void imu_ISR(void)
 {
@@ -23,13 +24,15 @@ void imu_ISR(void)
   _imu_ready = true;
   if (count > 1000/_params.values[PARAM_CAMERA_TRIGGER_RATE])
   {
-    TRIG_HIGH;
+//    TRIG_HIGH;
     count=0;
+    _image_taken=true;
   }
   else
   {
-    TRIG_LOW;
+//    TRIG_LOW;
     count++;
+    //_image_taken=false;
   }
 }
 

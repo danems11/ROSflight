@@ -27,7 +27,8 @@ static void mavlink_send_heartbeat(void)
 
 static void mavlink_send_imu(void)
 {
-  mavlink_msg_small_imu_send(MAVLINK_COMM_0,
+  //TRIG_HIGH;
+  mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
                              _imu_time,
                              _accel_data[0],
                              _accel_data[1],
@@ -35,7 +36,10 @@ static void mavlink_send_imu(void)
                              _gyro_data[0],
                              _gyro_data[1],
                              _gyro_data[2],
-                             _imu_temperature);
+                             _imu_temperature,
+                             _image_taken);
+  _image_taken = false;
+  //TRIG_LOW;
 }
 
 
