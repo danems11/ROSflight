@@ -24,16 +24,19 @@ void imu_ISR(void)
   _imu_ready = true;
   if (count > 1000/_params.values[PARAM_CAMERA_TRIGGER_RATE])
   {
-//    TRIG_HIGH;
+    TRIG_HIGH;
+    LED1_ON;
     count=0;
     _image_taken=true;
   }
   else
   {
-//    TRIG_LOW;
+    TRIG_LOW;
+    LED1_OFF;
     count++;
-    //_image_taken=false;
+    _image_taken=false;
   }
+  count++;
 }
 
 
