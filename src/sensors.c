@@ -24,13 +24,15 @@ void imu_ISR(void)
   if (count > 1000/_params.values[PARAM_CAMERA_TRIGGER_RATE])
   {
     TRIG_HIGH;
-    count=0;
+    LED1_ON;
+    count = 0;
   }
   else
   {
     TRIG_LOW;
-    count++;
+    LED1_OFF;
   }
+  count++;
 }
 
 
