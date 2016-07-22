@@ -42,33 +42,37 @@ static void mavlink_send_attitude(void)
 
 static void mavlink_send_imu(void)
 {
-  if (_params.values[PARAM_STREAM_ADJUSTED_GYRO])
+  if(!_imu_sent)
   {
-    mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
-                               _imu_time,
-                               _accel.x,
-                               _accel.y,
-                               _accel.z,
-                               _gyro.x - _adaptive_gyro_bias.x,
-                               _gyro.y - _adaptive_gyro_bias.y,
-                               _gyro.z - _adaptive_gyro_bias.z,
-                               _imu_temperature,
-                               _image_taken);
+    if (_params.values[PARAM_STREAM_ADJUSTED_GYRO])
+    {
+      mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
+                                                _imu_time,
+                                                _accel.x,
+                                                _accel.y,
+                                                _accel.z,
+                                                _gyro.x - _adaptive_gyro_bias.x,
+                                                _gyro.y - _adaptive_gyro_bias.y,
+                                                _gyro.z - _adaptive_gyro_bias.z,
+                                                _imu_temperature,
+                                                _image_taken);
+    }
+    else
+    {
+      mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
+                                                _imu_time,
+                                                _accel.x,
+                                                _accel.y,
+                                                _accel.z,
+                                                _gyro.x,
+                                                _gyro.y,
+                                                _gyro.z,
+                                                _imu_temperature,
+                                                _image_taken);
+    }
+    _image_taken = false;
+    _imu_sent = true;
   }
-  else
-  {
-    mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
-                               _imu_time,
-                               _accel.x,
-                               _accel.y,
-                               _accel.z,
-                               _gyro.x,
-                               _gyro.y,
-                               _gyro.z,
-                               _imu_temperature,
-                               _image_taken);
-  }
-  _image_taken = false;
 }
 
 

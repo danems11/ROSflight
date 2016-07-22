@@ -62,7 +62,7 @@ void set_param_defaults(void)
 
   init_param_int(PARAM_SYSTEM_ID, "SYS_ID", 1);
   init_param_int(PARAM_STREAM_HEARTBEAT_RATE, "STRM_HRTBT", 1);
-  init_param_int(PARAM_STREAM_IMU_RATE, "STRM_IMU", 10);
+  init_param_int(PARAM_STREAM_IMU_RATE, "STRM_IMU", 1000);
 
   init_param_int(PARAM_CAMERA_TRIGGER_RATE, "CAMERA_RATE", 27);
 

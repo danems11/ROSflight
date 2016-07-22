@@ -15,6 +15,7 @@ extern float _imu_temperature;
 extern uint32_t _imu_time;
 extern bool _imu_ready;
 extern bool _image_taken;
+extern bool _imu_sent;
 
 extern bool _diff_pressure_present;
 extern int16_t _diff_pressure;
