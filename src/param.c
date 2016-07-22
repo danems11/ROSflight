@@ -66,6 +66,8 @@ void set_param_defaults(void)
 
   init_param_int(PARAM_CAMERA_TRIGGER_RATE, "CAMERA_RATE", 27);
 
+  init_param_int(PARAM_STREAM_ADJUSTED_GYRO, "STRM_ADJ_GYRO", 0);
+
   init_param_int(PARAM_INIT_TIME, "FILTER_INIT_T", 3000); // ms
   init_param_float(PARAM_FILTER_KP, "FILTER_KP", 10000); // munits
   init_param_float(PARAM_FILTER_KI, "FILTER_KI", 1000);  // munits

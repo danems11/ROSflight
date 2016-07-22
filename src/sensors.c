@@ -70,9 +70,14 @@ static bool update_imu(void)
     _accel.y = accel_raw[1] * accel_scale;
     _accel.z = accel_raw[2] * accel_scale;
 
-    _gyro.x = gyro_raw[0] * gyro_scale;
-    _gyro.y = gyro_raw[1] * gyro_scale;
-    _gyro.z = gyro_raw[2] * gyro_scale;
+    _gyro.x = (float)gyro_raw[0] * gyro_scale;
+    _gyro.y = (float)gyro_raw[1] * gyro_scale;
+    _gyro.z = (float)gyro_raw[2] * gyro_scale;
+
+    mavlink_send_named_value_float("xgyro", _gyro.x);
+    mavlink_send_named_value_float("ygyro", _gyro.y);
+    mavlink_send_named_value_float("zgyro", _gyro.z);
+    mavlink_send_named_value_float("gyro_scale", gyro_scale);
 
     if (calib_acc)
     {
@@ -152,7 +157,6 @@ void init_sensors(void)
   // IMU
   _imu_ready = false;
   uint16_t acc1G;
-  float gyro_scale;
 
   mpu6050_register_interrupt_cb(&imu_ISR);
   mpu6050_init(true, &acc1G, &gyro_scale, _params.values[PARAM_BOARD_REVISION]);
