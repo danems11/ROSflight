@@ -1,4 +1,7 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
@@ -57,7 +60,10 @@ quaternion_t quaternion_multiply(quaternion_t q1, quaternion_t q2);
 quaternion_t quaternion_inverse(quaternion_t q);
 quaternion_t quat_from_two_vectors(vector_t u, vector_t v);
 
-void euler_from_quat(quaternion_t q, int32_t *phi, int32_t *theta, int32_t *psi);
+void euler_from_quat(quaternion_t q, float *phi, float *theta, float *psi);
 void euler_from_int_quat(intquat_t q, int32_t phi, int32_t theta, int32_t psi);
 
 float turboInvSqrt(float x);
+#ifdef __cplusplus
+}
+#endif

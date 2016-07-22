@@ -5,6 +5,7 @@
 #include "mode.h"
 #include "param.h"
 #include "mux.h"
+#include "sensors.h"
 
 #include "mavlink_receive.h"
 
@@ -29,7 +30,7 @@ static void mavlink_handle_msg_command_int(const mavlink_message_t *const msg)
     switch (cmd.command)
     {
     case MAV_CMD_PREFLIGHT_STORAGE:
-      if (false) //TODO temporarily reject if armed
+      if (true)
       {
         result = MAV_RESULT_TEMPORARILY_REJECTED;
       }
@@ -55,6 +56,28 @@ static void mavlink_handle_msg_command_int(const mavlink_message_t *const msg)
         result = success ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
       }
       break;
+
+      // Perform an IMU calibration (static offset calculation)
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+      if (true)
+      {
+        result = MAV_RESULT_TEMPORARILY_REJECTED;
+      }
+      else
+      {
+        bool success = false;
+        if (cmd.param1)
+        {
+          success &= calibrate_gyro();
+        }
+        if (cmd.x) // x is PARAM5
+        {
+          success &= calibrate_acc();
+        }
+        result = MAV_RESULT_ACCEPTED;
+      }
+      break;
+
     default:
       result = MAV_RESULT_UNSUPPORTED;
       break;
@@ -77,6 +100,58 @@ static void mavlink_handle_msg_timesync(const mavlink_message_t *const msg)
   }
 }
 
+static void mavlink_handle_msg_offboard_control(const mavlink_message_t *const msg)
+{
+  _offboard_control_time = micros();
+  mavlink_msg_offboard_control_decode(msg, &mavlink_offboard_control);
+
+  // put values into standard message
+  _offboard_control.x.value = mavlink_offboard_control.x;
+  _offboard_control.y.value = mavlink_offboard_control.y;
+  _offboard_control.z.value = mavlink_offboard_control.z;
+  _offboard_control.F.value = mavlink_offboard_control.F;
+
+  // Move flags into standard message
+  _offboard_control.x.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE1);
+  _offboard_control.y.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE2);
+  _offboard_control.z.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE3);
+  _offboard_control.F.active = !(mavlink_offboard_control.ignore & IGNORE_VALUE4);
+
+  // translate modes into standard message
+  switch (mavlink_offboard_control.mode)
+  {
+  case MODE_PASS_THROUGH:
+    _offboard_control.x.type = PASSTHROUGH;
+    _offboard_control.y.type = PASSTHROUGH;
+    _offboard_control.z.type = PASSTHROUGH;
+    _offboard_control.F.type = THROTTLE;
+    _offboard_control.x.value = mavlink_offboard_control.x/2.0f;
+    _offboard_control.y.value = mavlink_offboard_control.y/2.0f;
+    _offboard_control.z.value = mavlink_offboard_control.z/2.0f;
+    _offboard_control.F.value = mavlink_offboard_control.F;
+    break;
+  case MODE_ROLLRATE_PITCHRATE_YAWRATE_THROTTLE:
+    _offboard_control.x.type = RATE;
+    _offboard_control.y.type = RATE;
+    _offboard_control.z.type = RATE;
+    _offboard_control.F.type = THROTTLE;
+    break;
+  case MODE_ROLL_PITCH_YAWRATE_THROTTLE:
+    _offboard_control.x.type = ANGLE;
+    _offboard_control.y.type = ANGLE;
+    _offboard_control.z.type = RATE;
+    _offboard_control.F.type = THROTTLE;
+    break;
+  case MODE_ROLL_PITCH_YAWRATE_ALTITUDE:
+    _offboard_control.x.type = ANGLE;
+    _offboard_control.y.type = ANGLE;
+    _offboard_control.z.type = RATE;
+    _offboard_control.F.type = ALTITUDE;
+    break;
+    // Handle error state
+  }
+  _new_command = true;
+}
 
 static void handle_mavlink_message(void)
 {

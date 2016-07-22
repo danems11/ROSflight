@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
@@ -5,24 +9,22 @@
 #include <breezystm32/breezystm32.h>
 #include <turbotrig/turbotrig.h>
 #include <turbotrig/turbovec.h>
+#include "mavlink_util.h"
 
 #include "sensors.h"
 #include "param.h"
 
 #include "estimator.h"
 
-#define PF(a) ((int32_t)(a*1000.0))
-
 state_t _current_state;
+vector_t _adaptive_gyro_bias;
 
 static vector_t w1;
 static vector_t w2;
-static vector_t w;
 static vector_t wbar;
 static vector_t wfinal;
 static vector_t w_acc;
-static vector_t a;
-static vector_t g;
+static const vector_t g = {0.0f, 0.0f, 1.0f};
 static vector_t b;
 static quaternion_t q_tilde;
 static quaternion_t q_hat;
@@ -36,25 +38,15 @@ static float kp_;
 static float ki_;
 static uint32_t init_time;
 
-static void pfvec(vector_t v)
-{
-  printf("[%d, %d, %d]\n", (int32_t)(v.x*1000), (int32_t)(v.y*1000), (int32_t)(v.z*1000));
-}
-
-static void pfquat(quaternion_t v)
-{
-  printf("[%d, %d, %d, %d]\n", (int32_t)(v.w*1000), (int32_t)(v.x*1000), (int32_t)(v.y*1000), (int32_t)(v.z*1000));
-}
-
 
 void init_estimator(bool use_matrix_exponential, bool use_quadratic_integration, bool use_accelerometer)
 {
-  _current_state.p = 0;
-  _current_state.q = 0;
-  _current_state.r = 0;
-  _current_state.phi = 0;
-  _current_state.theta = 0;
-  _current_state.psi = 0;
+  _current_state.p = 0.0f;
+  _current_state.q = 0.0f;
+  _current_state.r = 0.0f;
+  _current_state.phi = 0.0f;
+  _current_state.theta = 0.0f;
+  _current_state.psi = 0.0f;
 
   q_hat.w = 1.0f;
   q_hat.x = 0.0f;
@@ -73,12 +65,8 @@ void init_estimator(bool use_matrix_exponential, bool use_quadratic_integration,
   b.y = 0.0f;
   b.z = 0.0f;
 
-  g.x = 0.0f;
-  g.y = 0.0f;
-  g.z = 1.0f;
-
-  kp_ = ((float)_params.values[PARAM_FILTER_KP])/1000.0f;
-  ki_ = ((float)_params.values[PARAM_FILTER_KI])/1000.0f;
+  kp_ = get_param_float(PARAM_FILTER_KP);
+  ki_ = get_param_float(PARAM_FILTER_KI);
   init_time = _params.values[PARAM_INIT_TIME]*1000; // microseconds
 
   w_acc.x = 0.0f;
@@ -94,27 +82,30 @@ void init_estimator(bool use_matrix_exponential, bool use_quadratic_integration,
   quad_int = use_quadratic_integration;
   use_acc = use_accelerometer;
 
+  _adaptive_gyro_bias.x = 0;
+  _adaptive_gyro_bias.y = 0;
+  _adaptive_gyro_bias.z = 0;
+
   last_time = 0;
 }
 
 
-void run_estimator(int32_t now)
+void run_estimator(uint32_t now)
 {
-  static bool initializing;
   static float kp, ki;
   if (last_time == 0)
   {
     last_time = now;
     return;
   }
-  int32_t dt = now - last_time;
+  float dt = (now - last_time) * 1e-6f;
   last_time = now;
 
   // Crank up the gains for the first few seconds for quick convergence
   if (now < init_time)
   {
-    kp = kp_*10.f;
-    ki = kp_*10.f;
+    kp = kp_*10.0f;
+    ki = ki_*10.0f;
   }
   else
   {
@@ -122,17 +113,13 @@ void run_estimator(int32_t now)
     ki = ki_;
   }
 
-
   // add in accelerometer
-  a.x = ((float)(_accel_data[0]*_accel_scale))/1000000.0f;
-  a.y = ((float)(_accel_data[1]*_accel_scale))/1000000.0f;
-  a.z = ((float)(_accel_data[2]*_accel_scale))/1000000.0f;
-  float a_sqrd_norm = a.x*a.x + a.y*a.y + a.z*a.z;
+  float a_sqrd_norm = _accel.x*_accel.x + _accel.y*_accel.y + _accel.z*_accel.z;
 
-  if (use_acc && a_sqrd_norm < 1.15*1.15*9.80665*9.80665 && a_sqrd_norm > 0.85*0.85*9.80665*9.80665)
+  if (use_acc && a_sqrd_norm < 1.15f*1.15f*9.80665f*9.80665f && a_sqrd_norm > 0.85f*0.85f*9.80665f*9.80665f)
   {
     // Get error estimated by accelerometer measurement
-    a = vector_normalize(a);
+    vector_t a = vector_normalize(_accel);
     // Get the quaternion from accelerometer (low-frequency measure q)
     // (Not in either paper)
     quaternion_t q_acc_inv = quaternion_inverse(quat_from_two_vectors(a, g));
@@ -144,37 +131,33 @@ void run_estimator(int32_t now)
     w_acc.x = -2.0f*q_tilde.w*q_tilde.x;
     w_acc.y = -2.0f*q_tilde.w*q_tilde.y;
     w_acc.z = -2.0f*q_tilde.w*q_tilde.z;
-//    printf("using acc, kp = %d, ki = %d", PF(kp), PF(ki));
+
+    // integrate biases from accelerometer feedback
+    // (eq 47b Mahoney Paper, using correction term w_acc found above)
+    b.x -= ki*w_acc.x*dt;
+    b.y -= ki*w_acc.y*dt;
+    b.z -= ki*w_acc.z*dt;
   }
   else
   {
-//    printf("not using acc, %d\t%d", PF(a_sqrd_norm), use_acc);
+    w_acc.x = 0.0f;
+    w_acc.y = 0.0f;
+    w_acc.z = 0.0f;
   }
 
-  // integrate biases from accelerometer feedback
-  // (eq 47b Mahoney Paper, using correction term w_acc found above)
-  b.x -= ki*w_acc.x*(float)dt/1000000.0f;
-  b.y -= ki*w_acc.y*(float)dt/1000000.0f;
-  b.z -= ki*w_acc.z*(float)dt/1000000.0f;
-//  printf("b = "); pfvec(scalar_multiply(1000.0,b));
-
   // Pull out Gyro measurements
-  w.x = ((float)(_gyro_data[0]*_gyro_scale))/1000.0f;
-  w.y = ((float)(_gyro_data[1]*_gyro_scale))/1000.0f;
-  w.z = ((float)(_gyro_data[2]*_gyro_scale))/1000.0f;
-
   if (quad_int)
   {
     // Quadratic Integration (Eq. 14 Casey Paper)
     // this integration step adds 12 us on the STM32F10x chips
     wbar = vector_add(vector_add(scalar_multiply(-1.0f/12.0f,w2), scalar_multiply(8.0f/12.0f,w1)),
-                      scalar_multiply(5.0f/12.0f,w));
+                      scalar_multiply(5.0f/12.0f,_gyro));
     w2 = w1;
-    w1 = w;
+    w1 = _gyro;
   }
   else
   {
-    wbar = w;
+    wbar = _gyro;
   }
 
   // Build the composite omega vector for kinematic propagation
@@ -197,11 +180,11 @@ void run_estimator(int32_t now)
       // This adds 66 us on STM32F10x chips
       float norm_w = sqrt(sqrd_norm_w);
       quaternion_t qhat_np1;
-      float t1 = cos((norm_w*dt)/(2000000.0f));
-      float t2 = 1.0/norm_w * sin((norm_w*dt)/(2000000.0f));
-      qhat_np1.w = t1*q_hat.w   - t2*(p*q_hat.x - q*q_hat.y - r*q_hat.z);
-      qhat_np1.x = t1*q_hat.x   + t2*(p*q_hat.w +             r*q_hat.y - q*q_hat.z);
-      qhat_np1.y = t1*q_hat.y   + t2*(q*q_hat.w - r*q_hat.x +             p*q_hat.z);
+      float t1 = cos((norm_w*dt)/2.0f);
+      float t2 = 1.0f/norm_w * sin((norm_w*dt)/2.0f);
+      qhat_np1.w = t1*q_hat.w   + t2*(          - p*q_hat.x - q*q_hat.y - r*q_hat.z);
+      qhat_np1.x = t1*q_hat.x   + t2*(p*q_hat.w             + r*q_hat.y - q*q_hat.z);
+      qhat_np1.y = t1*q_hat.y   + t2*(q*q_hat.w - r*q_hat.x             + p*q_hat.z);
       qhat_np1.z = t1*q_hat.z   + t2*(r*q_hat.w + q*q_hat.x - p*q_hat.y);
       q_hat = quaternion_normalize(qhat_np1);
     }
@@ -209,20 +192,36 @@ void run_estimator(int32_t now)
     {
       // Euler Integration
       // (Eq. 47a Mahoney Paper), but this is pretty straight-forward
-      quaternion_t qdot = {0.5 * (- p*q_hat.x - q*q_hat.y - r*q_hat.z),
-                           0.5 * (p*q_hat.w             + r*q_hat.y - q*q_hat.z),
-                           0.5 * (q*q_hat.w - r*q_hat.x             + p*q_hat.z),
-                           0.5 * (r*q_hat.w + q*q_hat.x - p*q_hat.y)
+      quaternion_t qdot = {0.5f * (           - p*q_hat.x - q*q_hat.y - r*q_hat.z),
+                           0.5f * ( p*q_hat.w             + r*q_hat.y - q*q_hat.z),
+                           0.5f * ( q*q_hat.w - r*q_hat.x             + p*q_hat.z),
+                           0.5f * ( r*q_hat.w + q*q_hat.x - p*q_hat.y)
                           };
-      q_hat.w = q_hat.w + qdot.w*(float)dt/1000000.0f;
-      q_hat.x = q_hat.x + qdot.x*(float)dt/1000000.0f;
-      q_hat.y = q_hat.y + qdot.y*(float)dt/1000000.0f;
-      q_hat.z = q_hat.z + qdot.z*(float)dt/1000000.0f;
+      q_hat.w += qdot.w*dt;
+      q_hat.x += qdot.x*dt;
+      q_hat.y += qdot.y*dt;
+      q_hat.z += qdot.z*dt;
       q_hat = quaternion_normalize(q_hat);
     }
   }
 
   // Extract Euler Angles for controller
   euler_from_quat(q_hat, &_current_state.phi, &_current_state.theta, &_current_state.psi);
+
+  // Save off gyro
+  wbar = vector_sub(wbar, b);
+  float alpha = 0.8f;
+  _current_state.p = (1.0f-alpha)*wbar.x + alpha*_current_state.p;
+  _current_state.q = (1.0f-alpha)*wbar.y + alpha*_current_state.q;
+  _current_state.r = (1.0f-alpha)*wbar.z + alpha*_current_state.r;
+
+  // Save gyro biases for streaming to computer
+  _adaptive_gyro_bias.x = b.x;
+  _adaptive_gyro_bias.y = b.y;
+  _adaptive_gyro_bias.z = b.z;
 }
+
+#ifdef __cplusplus
+}
+#endif
 

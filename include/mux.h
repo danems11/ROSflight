@@ -1,3 +1,8 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #pragma once
 
 #include <stdbool.h>
@@ -16,7 +21,7 @@ typedef struct
 {
   bool active; // Whether or not the channel is active
   control_type_t type;  // What type the channel is
-  int32_t value; // The value of the channel
+  float value; // The value of the channel
 } control_channel_t;
 
 typedef struct
@@ -34,4 +39,8 @@ extern control_t _combined_control;
 extern bool _new_command;
 
 bool mux_inputs();
+
+#ifdef __cplusplus
+}
+#endif
 

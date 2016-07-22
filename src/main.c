@@ -28,11 +28,11 @@ int main(void)
   SetSysClock(0);
   systemInit();
 
-  // Initialize Serial ports
-  Serial1 = uartOpen(USART1, NULL, 921600, MODE_RXTX);
-
   // Perform Setup Operations
   setup();
+
+  // Initialize Serial ports
+  Serial1 = uartOpen(USART1, NULL, _params.values[PARAM_BAUD_RATE], MODE_RXTX);
 
   while (1)
   {
@@ -66,6 +66,14 @@ void setup(void)
 
   // Initialize Sensors
   init_sensors();
+
+
+  /***********************/
+  /***  Software Setup ***/
+  /***********************/
+
+  // Initialize Estimator
+  init_estimator(true, true, true);
 }
 
 

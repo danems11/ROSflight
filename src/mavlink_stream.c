@@ -6,9 +6,12 @@
 #include "mavlink_param.h"
 #include "mixer.h"
 #include "sensors.h"
+#include "estimator.h"
+#include "param.h"
 
 #include "mavlink_stream.h"
 #include "mavlink_util.h"
+#include "mavlink_log.h"
 
 // typedefs
 typedef struct
@@ -25,24 +28,66 @@ static void mavlink_send_heartbeat(void)
                              MAV_STATE_STANDBY);
 }
 
+static void mavlink_send_attitude(void)
+{
+  mavlink_msg_attitude_send(MAVLINK_COMM_0,
+                            millis(),
+                            _current_state.phi,
+                            _current_state.theta,
+                            _current_state.psi,
+                            _current_state.p,
+                            _current_state.q,
+                            _current_state.r);
+}
+
 static void mavlink_send_imu(void)
 {
-  //TRIG_HIGH;
-  mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
-                             _imu_time,
-                             _accel_data[0],
-                             _accel_data[1],
-                             _accel_data[2],
-                             _gyro_data[0],
-                             _gyro_data[1],
-                             _gyro_data[2],
-                             _imu_temperature,
-                             _image_taken);
+  if (_params.values[PARAM_STREAM_ADJUSTED_GYRO])
+  {
+    mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
+                               _imu_time,
+                               _accel.x,
+                               _accel.y,
+                               _accel.z,
+                               _gyro.x - _adaptive_gyro_bias.x,
+                               _gyro.y - _adaptive_gyro_bias.y,
+                               _gyro.z - _adaptive_gyro_bias.z,
+                               _imu_temperature,
+                               _image_taken);
+  }
+  else
+  {
+    mavlink_msg_camera_stamped_small_imu_send(MAVLINK_COMM_0,
+                               _imu_time,
+                               _accel.x,
+                               _accel.y,
+                               _accel.z,
+                               _gyro.x,
+                               _gyro.y,
+                               _gyro.z,
+                               _imu_temperature,
+                               _image_taken);
+  }
   _image_taken = false;
-  //TRIG_LOW;
 }
 
 
+
+static void mavlink_send_sonar(void)
+{
+  if (_sonar_present)
+  {
+    mavlink_msg_distance_sensor_send(MAVLINK_COMM_0,
+                                     _sonar_time,
+                                     24,
+                                     822,
+                                     _sonar_range,
+                                     MAV_DISTANCE_SENSOR_ULTRASOUND,
+                                     1,
+                                     MAV_SENSOR_ROTATION_PITCH_180,
+                                     1);
+  }
+}
 
 static void mavlink_send_low_priority(void)
 {
@@ -52,9 +97,10 @@ static void mavlink_send_low_priority(void)
 // local variable definitions
 static mavlink_stream_t mavlink_streams[MAVLINK_STREAM_COUNT] =
 {
-  { .period_us = 1e6, .last_time_us = 0, .send_function = mavlink_send_heartbeat },
-  { .period_us = 1e3, .last_time_us = 0, .send_function = mavlink_send_imu },
-  { .period_us = 1e5, .last_time_us = 0, .send_function = mavlink_send_low_priority }
+  { .period_us = 1000000, .last_time_us = 0, .send_function = mavlink_send_heartbeat },
+  { .period_us = 200000,  .last_time_us = 0, .send_function = mavlink_send_attitude },
+  { .period_us = 1000,    .last_time_us = 0, .send_function = mavlink_send_imu },
+  { .period_us = 10000,   .last_time_us = 0, .send_function = mavlink_send_low_priority }
 };
 
 // function definitions
