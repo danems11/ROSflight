@@ -1,3 +1,4 @@
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 
 #include <stdbool.h>
@@ -252,7 +253,27 @@ param_id_t lookup_param_id(const char name[PARAMS_NAME_LENGTH])
   return PARAMS_COUNT;
 }
 
-bool set_param_by_id(param_id_t id, int32_t value)
+const char *get_param_name(param_id_t id)
+{
+  return _params.names[id];
+}
+
+param_type_t get_param_type(param_id_t id)
+{
+  return _params.types[id];
+}
+
+int get_param_int(param_id_t id)
+{
+  return _params.values[id];
+}
+
+float get_param_float(param_id_t id)
+{
+  return *(float *) &_params.values[id];
+}
+
+bool set_param_int(param_id_t id, int32_t value)
 {
   if (id < PARAMS_COUNT && value != _params.values[id])
   {
@@ -264,23 +285,20 @@ bool set_param_by_id(param_id_t id, int32_t value)
   return false;
 }
 
-bool set_param_by_name(const char name[PARAMS_NAME_LENGTH], int32_t value)
+bool set_param_float(param_id_t id, float value)
 {
-  param_id_t id = lookup_param_id(name);
-  return set_param_by_id(id, value);
+  return set_param_int(id, *(int32_t *) &value);
 }
 
-bool set_param_by_id_float(param_id_t id, float value)
+bool set_param_by_name_int(const char name[PARAMS_NAME_LENGTH], int32_t value)
 {
-  return set_param_by_id(id, *(int32_t *) &value);
+  param_id_t id = lookup_param_id(name);
+  return set_param_int(id, value);
 }
 
 bool set_param_by_name_float(const char name[PARAMS_NAME_LENGTH], float value)
 {
-  return set_param_by_name(name, *(int32_t *) &value);
+  return set_param_by_name_int(name, *(int32_t *) &value);
 }
 
-float get_param_float(param_id_t id)
-{
-  return *(float *) &_params.values[id];
-}
+#pragma GCC diagnostic pop
