@@ -49,15 +49,15 @@ bool check_mode(uint32_t now)
   prev_time = now;
 
   // check for arming switch
-  if (_params.values[PARAM_ARM_STICKS])
+  if (get_param_int(PARAM_ARM_STICKS))
   {
     if (_armed_state == DISARMED)
     {
       // if left stick is down and to the right
-      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] +
-          _params.values[PARAM_ARM_THRESHOLD]
-          && pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) < (_params.values[PARAM_RC_Z_CENTER] - _params.values[PARAM_RC_Z_RANGE]/2)
-          + _params.values[PARAM_ARM_THRESHOLD])
+      if (pwmRead(get_param_int(PARAM_RC_F_CHANNEL)) < get_param_int(PARAM_RC_F_BOTTOM) +
+          get_param_int(PARAM_ARM_THRESHOLD)
+          && pwmRead(get_param_int(PARAM_RC_Z_CHANNEL)) < (get_param_int(PARAM_RC_Z_CENTER) - get_param_int(PARAM_RC_Z_RANGE)/2)
+          + get_param_int(PARAM_ARM_THRESHOLD))
       {
         time_sticks_have_been_in_arming_position += dt;
       }
@@ -74,10 +74,10 @@ bool check_mode(uint32_t now)
     else // _armed_state is ARMED
     {
       // if left stick is down and to the left
-      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] +
-          _params.values[PARAM_ARM_THRESHOLD]
-          && pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) > (_params.values[PARAM_RC_Z_CENTER] + _params.values[PARAM_RC_Z_RANGE]/2)
-          - _params.values[PARAM_ARM_THRESHOLD])
+      if (pwmRead(get_param_int(PARAM_RC_F_CHANNEL)) < get_param_int(PARAM_RC_F_BOTTOM) +
+          get_param_int(PARAM_ARM_THRESHOLD)
+          && pwmRead(get_param_int(PARAM_RC_Z_CHANNEL)) > (get_param_int(PARAM_RC_Z_CENTER) + get_param_int(PARAM_RC_Z_RANGE)/2)
+          - get_param_int(PARAM_ARM_THRESHOLD))
       {
         time_sticks_have_been_in_arming_position += dt;
       }
@@ -94,7 +94,7 @@ bool check_mode(uint32_t now)
   }
   else
   {
-    if (rc_switch(_params.values[PARAM_ARM_CHANNEL]))
+    if (rc_switch(get_param_int(PARAM_ARM_CHANNEL)))
     {
       arm();
     }

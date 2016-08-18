@@ -73,7 +73,7 @@ control_t rate_controller(control_t rate_command, uint32_t now)
     if(get_param_float(PARAM_PID_ROLL_RATE_I) > 0)
       integrator += error*dt;
     motor_command.x.value = fsat(error * get_param_float(PARAM_PID_ROLL_RATE_P) + integrator * get_param_float(PARAM_PID_ROLL_RATE_I),
-                                 _params.values[PARAM_MAX_COMMAND]);
+                                 get_param_int(PARAM_MAX_COMMAND));
     motor_command.x.type = PASSTHROUGH;
   }
 
@@ -84,7 +84,7 @@ control_t rate_controller(control_t rate_command, uint32_t now)
     if(get_param_float(PARAM_PID_PITCH_RATE_I) > 0)
       integrator += error*dt;
     motor_command.y.value = fsat(error * get_param_float(PARAM_PID_PITCH_RATE_P) + integrator * get_param_float(PARAM_PID_PITCH_RATE_I),
-                                 _params.values[PARAM_MAX_COMMAND]);
+                                 get_param_int(PARAM_MAX_COMMAND));
     motor_command.y.type = PASSTHROUGH;
   }
 
