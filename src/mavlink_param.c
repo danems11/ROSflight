@@ -29,7 +29,11 @@ void mavlink_send_param(param_id_t id)
     }
 
     mavlink_msg_param_value_send(MAVLINK_COMM_0,
-                                 _params.names[id], get_param_float(id), type, PARAMS_COUNT, id);
+                                 _params.names[id],
+                                 get_param_float(id),
+                                 type,
+                                 PARAMS_COUNT,
+                                 id);
   }
 }
 

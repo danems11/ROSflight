@@ -303,13 +303,14 @@ bool activate_failsafe()
         failsafe_start_time = millis();
       }
       // we were in failsafe already
-      if(millis() - failsafe_start_time > 10*1000)
+      uint32_t now = millis();
+      if(now - failsafe_start_time > 10000 && now - failsafe_start_time < 10100)
       {
         disarm();
       }
-      else
+      else if(now - failsafe_start_time < 10000)
       {
-        mavlink_log_error_throttle(1000, "LOST RC, ACTIVATE FAILSAFE", NULL);
+        mavlink_log_error_throttle(10000, "LOST RC, ACTIVATE FAILSAFE", NULL);
       }
       failsafe_command.F.value = get_param_float(PARAM_FAILSAFE_THROTTLE);
       return true;

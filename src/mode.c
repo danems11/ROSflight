@@ -51,13 +51,18 @@ bool check_mode(uint32_t now)
   // check for arming switch
   if (_params.values[PARAM_ARM_STICKS])
   {
+    uint32_t z_channel = pwmRead(_params.values[PARAM_RC_Z_CHANNEL]);
+    uint32_t f_channel = pwmRead(_params.values[PARAM_RC_F_CHANNEL]);
+    if( f_channel < 900 || f_channel > 2100 || z_channel < 900 || z_channel > 2100)
+    {
+      // We aren't getting valid RC, so don't perform arming or disarming logic
+      return;
+    }
     if (_armed_state == DISARMED)
     {
       // if left stick is down and to the right
-      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] +
-          _params.values[PARAM_ARM_THRESHOLD]
-          && pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) < (_params.values[PARAM_RC_Z_CENTER] - _params.values[PARAM_RC_Z_RANGE]/2)
-          + _params.values[PARAM_ARM_THRESHOLD])
+      if (f_channel < _params.values[PARAM_RC_F_BOTTOM] + _params.values[PARAM_ARM_THRESHOLD]
+          && z_channel < (_params.values[PARAM_RC_Z_CENTER] - _params.values[PARAM_RC_Z_RANGE]/2) + _params.values[PARAM_ARM_THRESHOLD])
       {
         time_sticks_have_been_in_arming_position += dt;
       }
@@ -74,10 +79,8 @@ bool check_mode(uint32_t now)
     else // _armed_state is ARMED
     {
       // if left stick is down and to the left
-      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] +
-          _params.values[PARAM_ARM_THRESHOLD]
-          && pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) > (_params.values[PARAM_RC_Z_CENTER] + _params.values[PARAM_RC_Z_RANGE]/2)
-          - _params.values[PARAM_ARM_THRESHOLD])
+      if (f_channel < _params.values[PARAM_RC_F_BOTTOM] + _params.values[PARAM_ARM_THRESHOLD]
+          && z_channel > (_params.values[PARAM_RC_Z_CENTER] + _params.values[PARAM_RC_Z_RANGE]/2) - _params.values[PARAM_ARM_THRESHOLD])
       {
         time_sticks_have_been_in_arming_position += dt;
       }
@@ -105,3 +108,4 @@ bool check_mode(uint32_t now)
   }
   return true;
 }
+
