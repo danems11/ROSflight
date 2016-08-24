@@ -82,6 +82,7 @@ typedef enum
   PARAM_MOTOR_PWM_SEND_RATE,
   PARAM_MOTOR_IDLE_PWM,
   PARAM_SPIN_MOTORS_WHEN_ARMED,
+  PARAM_FAILSAFE_THROTTLE,
 
   /*******************************/
   /*** ESTIMATOR CONFIGURATION ***/
@@ -104,6 +105,7 @@ typedef enum
   /*** RC CONFIGURATION ***/
   /************************/
   PARAM_RC_TYPE,
+  PARAM_RC_NUM_CHANNELS,
   PARAM_RC_X_CHANNEL,
   PARAM_RC_Y_CHANNEL,
   PARAM_RC_Z_CHANNEL,

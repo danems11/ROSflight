@@ -97,7 +97,10 @@ void set_param_defaults(void)
   init_param_int(PARAM_MOTOR_PWM_SEND_RATE, "MOTOR_PWM_UPDATE", 400);
   init_param_int(PARAM_MOTOR_IDLE_PWM, "MOTOR_IDLE_PWM", 1100);
   init_param_int(PARAM_SPIN_MOTORS_WHEN_ARMED, "ARM_SPIN_MOTORS", true);
+  init_param_float(PARAM_FAILSAFE_THROTTLE, "FAILSAFE_THR", 0.5);
+
   init_param_int(PARAM_RC_TYPE, "RC_TYPE", 1);
+  init_param_int(PARAM_RC_NUM_CHANNELS, "RC_NUM_CHANNELS", 6);
   init_param_int(PARAM_RC_X_CHANNEL, "RC_X_CHN", 0);
   init_param_int(PARAM_RC_Y_CHANNEL, "RC_Y_CHN", 1);
   init_param_int(PARAM_RC_Z_CHANNEL, "RC_Z_CHN", 3);

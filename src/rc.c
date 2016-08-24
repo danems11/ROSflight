@@ -1,4 +1,4 @@
-#include <stdint.h>
+﻿#include <stdint.h>
 #include <stdbool.h>
 
 #include <breezystm32/breezystm32.h>
@@ -14,6 +14,14 @@
 static rc_switch_t switches[4];
 bool _calibrate_rc;
 void calibrate_rc();
+bool activate_failsafe();
+
+static control_t failsafe_command = {
+  {true, ANGLE, 0.0},
+  {true, ANGLE, 0.0},
+  {true, RATE, 0.0},
+  {true, THROTTLE, 0.0}
+};
 
 void init_rc()
 {
@@ -65,12 +73,12 @@ static void convertPWMtoRad()
   if (_rc_control.x.type == ANGLE)
   {
     _rc_control.x.value = (float)((pwmRead(_params.values[PARAM_RC_X_CHANNEL]) - 1500)
-                           *2.0f*get_param_float(PARAM_RC_MAX_ROLL))/(float)_params.values[PARAM_RC_X_RANGE];
+                                  *2.0f*get_param_float(PARAM_RC_MAX_ROLL))/(float)_params.values[PARAM_RC_X_RANGE];
   }
   else if (_rc_control.x.type == RATE)
   {
     _rc_control.x.value = (float)((pwmRead(_params.values[PARAM_RC_X_CHANNEL]) - 1500)
-                            *2.0f*get_param_float(PARAM_RC_MAX_ROLLRATE))/(float)_params.values[PARAM_RC_X_RANGE];
+                                  *2.0f*get_param_float(PARAM_RC_MAX_ROLLRATE))/(float)_params.values[PARAM_RC_X_RANGE];
   }
   else if (_rc_control.x.type == PASSTHROUGH)
   {
@@ -81,12 +89,12 @@ static void convertPWMtoRad()
   if (_rc_control.y.type == ANGLE)
   {
     _rc_control.y.value = ((pwmRead(_params.values[PARAM_RC_Y_CHANNEL]) - 1500)
-                            *2.0f*get_param_float(PARAM_RC_MAX_PITCH))/(float)_params.values[PARAM_RC_Y_RANGE];
+                           *2.0f*get_param_float(PARAM_RC_MAX_PITCH))/(float)_params.values[PARAM_RC_Y_RANGE];
   }
   else if (_rc_control.y.type == RATE)
   {
     _rc_control.y.value = (float)((pwmRead(_params.values[PARAM_RC_Y_CHANNEL]) - 1500)
-                            *2.0f*get_param_float(PARAM_RC_MAX_PITCHRATE))/(float)_params.values[PARAM_RC_Y_RANGE];
+                                  *2.0f*get_param_float(PARAM_RC_MAX_PITCHRATE))/(float)_params.values[PARAM_RC_Y_RANGE];
   }
   else if (_rc_control.y.type == PASSTHROUGH)
   {
@@ -106,87 +114,95 @@ static void convertPWMtoRad()
 
   // Finally, the throttle command
   _rc_control.F.value = (float)((pwmRead(_params.values[PARAM_RC_F_CHANNEL]) - _params.values[PARAM_RC_F_BOTTOM]) * 1000.0f)
-                        / (float)_params.values[PARAM_RC_F_RANGE];
+      / (float)_params.values[PARAM_RC_F_RANGE];
 }
 
 
 bool receive_rc(uint32_t now)
 {
-  if(_calibrate_rc)
+  if(activate_failsafe())
   {
-    calibrate_rc();
-  }
-  // if it has been more than 20ms then look for new RC values and parse them
-  static uint32_t last_rc_receive_time = 0;
-  static uint32_t time_of_last_stick_deviation = 0;
-
-  if (now - last_rc_receive_time < 20000)
-  {
-    return false;
-  }
-  last_rc_receive_time = now;
-  // Get timestamp for deadband control lag
-
-
-  // Figure out the desired control type from the switches and params
-  if (_params.values[PARAM_FIXED_WING])
-  {
-    // for using fixedwings
-    _rc_control.x.type = _rc_control.y.type = _rc_control.z.type = PASSTHROUGH;
-    _rc_control.F.type = THROTTLE;
+    _rc_control = failsafe_command;
   }
   else
   {
-    _rc_control.x.type = _rc_control.y.type = rc_switch(_params.values[PARAM_RC_ATT_CONTROL_TYPE_CHANNEL]) ? ANGLE : RATE;
-    _rc_control.z.type = RATE;
-    _rc_control.F.type = rc_switch(_params.values[PARAM_RC_F_CONTROL_TYPE_CHANNEL]) ? ALTITUDE : THROTTLE;
-  }
-
-  // Interpret PWM Values from RC
-  convertPWMtoRad();
-
-  // Set flags for attitude channels
-  if (rc_switch(_params.values[PARAM_RC_ATTITUDE_OVERRIDE_CHANNEL])
-      || now - time_of_last_stick_deviation < (uint32_t)(_params.values[PARAM_OVERRIDE_LAG_TIME])*1000)
-  {
-    // Pilot is in full control
-    _rc_control.x.active = true;
-    _rc_control.y.active = true;
-    _rc_control.z.active = true;
-  }
-  else
-  {
-    // Check for stick deviation - if so, then the channel is active
-    _rc_control.x.active = _rc_control.y.active  = _rc_control.z.active =
-                             abs(pwmRead(_params.values[PARAM_RC_X_CHANNEL]) - _params.values[PARAM_RC_X_CENTER]) >
-                             _params.values[PARAM_RC_OVERRIDE_DEVIATION]
-                             || abs(pwmRead(_params.values[PARAM_RC_Y_CHANNEL]) - _params.values[PARAM_RC_Y_CENTER]) >
-                             _params.values[PARAM_RC_OVERRIDE_DEVIATION]
-                             || abs(pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) - _params.values[PARAM_RC_Z_CENTER]) >
-                             _params.values[PARAM_RC_OVERRIDE_DEVIATION];
-    if (_rc_control.x.active)
+    if(_calibrate_rc)
     {
-      // reset override lag
-      time_of_last_stick_deviation = now;
+      calibrate_rc();
+    }
+    // if it has been more than 20ms then look for new RC values and parse them
+    static uint32_t last_rc_receive_time = 0;
+    static uint32_t time_of_last_stick_deviation = 0;
+
+    if (now - last_rc_receive_time < 20000)
+    {
+      return false;
+    }
+    last_rc_receive_time = now;
+    // Get timestamp for deadband control lag
+
+
+    // Figure out the desired control type from the switches and params
+    if (_params.values[PARAM_FIXED_WING])
+    {
+      // for using fixedwings
+      _rc_control.x.type = _rc_control.y.type = _rc_control.z.type = PASSTHROUGH;
+      _rc_control.F.type = THROTTLE;
+    }
+    else
+    {
+      _rc_control.x.type = _rc_control.y.type = rc_switch(_params.values[PARAM_RC_ATT_CONTROL_TYPE_CHANNEL]) ? ANGLE : RATE;
+      _rc_control.z.type = RATE;
+      _rc_control.F.type = rc_switch(_params.values[PARAM_RC_F_CONTROL_TYPE_CHANNEL]) ? ALTITUDE : THROTTLE;
+    }
+
+    // Interpret PWM Values from RC
+    convertPWMtoRad();
+
+    // Set flags for attitude channels
+    if (rc_switch(_params.values[PARAM_RC_ATTITUDE_OVERRIDE_CHANNEL])
+        || now - time_of_last_stick_deviation < (uint32_t)(_params.values[PARAM_OVERRIDE_LAG_TIME])*1000)
+    {
+      // Pilot is in full control
+      _rc_control.x.active = true;
+      _rc_control.y.active = true;
+      _rc_control.z.active = true;
+    }
+    else
+    {
+      // Check for stick deviation - if so, then the channel is active
+      _rc_control.x.active = _rc_control.y.active  = _rc_control.z.active =
+          abs(pwmRead(_params.values[PARAM_RC_X_CHANNEL]) - _params.values[PARAM_RC_X_CENTER]) >
+          _params.values[PARAM_RC_OVERRIDE_DEVIATION]
+          || abs(pwmRead(_params.values[PARAM_RC_Y_CHANNEL]) - _params.values[PARAM_RC_Y_CENTER]) >
+          _params.values[PARAM_RC_OVERRIDE_DEVIATION]
+          || abs(pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) - _params.values[PARAM_RC_Z_CENTER]) >
+          _params.values[PARAM_RC_OVERRIDE_DEVIATION];
+      if (_rc_control.x.active)
+      {
+        // reset override lag
+        time_of_last_stick_deviation = now;
+      }
+    }
+
+
+    // Set flags for throttle channel
+    if (rc_switch(_params.values[PARAM_RC_THROTTLE_OVERRIDE_CHANNEL]))
+    {
+      // RC Pilot is in full control
+      _rc_control.F.active = true;
+    }
+    else
+    {
+      // Onboard Control - min throttle Checking will be done in mux and in the controller.
+      _rc_control.F.active = false;
     }
   }
-
-
-  // Set flags for throttle channel
-  if (rc_switch(_params.values[PARAM_RC_THROTTLE_OVERRIDE_CHANNEL]))
-  {
-    // RC Pilot is in full control
-    _rc_control.F.active = true;
-  }
-  else
-  {
-    // Onboard Control - min throttle Checking will be done in mux and in the controller.
-    _rc_control.F.active = false;
-  }
-
   _new_command = true;
   return true;
 }
+
+
 
 void calibrate_rc()
 {
@@ -270,5 +286,37 @@ void calibrate_rc()
 
   mavlink_log_warning("Completed RC calibration", NULL);
   _calibrate_rc = false;
+}
+
+bool activate_failsafe()
+{
+  static bool failsafe_active = false;
+  static uint32_t failsafe_start_time = 0;
+  for(int8_t i = 0; i<_params.values[PARAM_RC_NUM_CHANNELS]; i++)
+  {
+    if(pwmRead(i) < 900 || pwmRead(i) > 2100)
+    {
+      if(!failsafe_active)
+      {
+        // we just entered failsafe mode
+        failsafe_active = true;
+        failsafe_start_time = millis();
+      }
+      // we were in failsafe already
+      if(millis() - failsafe_start_time > 10*1000)
+      {
+        disarm();
+      }
+      else
+      {
+        mavlink_log_error_throttle(1000, "LOST RC, ACTIVATE FAILSAFE", NULL);
+      }
+      failsafe_command.F.value = get_param_float(PARAM_FAILSAFE_THROTTLE);
+      return true;
+    }
+  }
+  // we didn't enter failsafe mode
+  failsafe_active = false;
+  return false;
 }
 

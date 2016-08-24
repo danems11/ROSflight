@@ -21,6 +21,9 @@ error_state_t _error_state;
 void init_mode(void);
 bool check_mode(uint32_t now);
 
+void arm();
+void disarm();
+
 #ifdef __cplusplus
 }
 #endif
