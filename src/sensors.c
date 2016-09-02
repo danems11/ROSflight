@@ -31,10 +31,14 @@ bool _sonar_present;
 int16_t _sonar_range;
 uint32_t _sonar_time;
 
+bool _mag_present;
+int16_t _mag_field[3];
+
 // local variable definitions
 static uint32_t diff_press_next_us;
 static uint32_t baro_next_us;
 static uint32_t sonar_next_us;
+static uint32_t mag_next_us;
 
 static float accel_scale;
 static float gyro_scale;
@@ -171,6 +175,10 @@ void init_sensors(void)
   // SONAR
   _sonar_present = mb1242_init();
   sonar_next_us = 0;
+
+  // MAG
+  _mag_present = hmc5883lInit(_params.values[PARAM_BOARD_REVISION]);
+  mag_next_us = 0;
 }
 
 bool update_sensors(uint32_t time_us)
@@ -192,6 +200,11 @@ bool update_sensors(uint32_t time_us)
     sonar_next_us += _params.values[PARAM_SONAR_UPDATE];
     _sonar_time = micros();
     _sonar_range = mb1242_poll();
+  }
+  else if (_mag_present && time_us > mag_next_us && _params.values[PARAM_MAG_UPDATE] > 0)
+  {
+    mag_next_us += _params.values[PARAM_MAG_UPDATE];
+    hmc5883lRead(_mag_field);
   }
   return update_imu();
 }

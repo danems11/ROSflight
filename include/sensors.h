@@ -27,6 +27,9 @@ extern bool _sonar_present;
 extern int16_t _sonar_range;
 extern uint32_t _sonar_time;
 
+extern bool _mag_present;
+extern int16_t _mag_field[3];
+
 // function declarations
 void init_sensors(void);
 bool update_sensors(uint32_t time_us);
