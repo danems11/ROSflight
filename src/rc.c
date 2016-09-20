@@ -11,7 +11,33 @@
 #include "mavlink_util.h"
 #include "mavlink_log.h"
 
-static rc_switch_t switches[4];
+//***************************
+// NEW
+//***************************
+
+float _rc_stick[NUM_RC_STICKS];
+bool _rc_switch[NUM_RC_SWITCHES];
+bool _rc_switch_assigned[NUM_RC_SWITCHES];
+
+static struct
+{
+  uint8_t channel;
+  uint16_t center;
+  uint16_t range;
+  bool positive; // true if 0 to 1 instead of -1 to 1
+} sticks[NUM_RC_STICKS];
+
+static struct
+{
+  bool assigned;
+  uint8_t channel;
+  int8_t direction;
+} switches[NUM_RC_SWITCHES];
+
+//***************************
+
+//static rc_switch_t switches[NUM_RC_SWITCH];
+
 bool _calibrate_rc;
 void calibrate_rc();
 
@@ -41,6 +67,47 @@ void init_rc()
   switches[2].direction = get_param_int(PARAM_RC_SWITCH_7_DIRECTION);
   switches[3].channel = 7;
   switches[3].direction = get_param_int(PARAM_RC_SWITCH_8_DIRECTION);
+
+  //***************************
+  // NEW
+  //***************************
+
+  sticks[RC_STICK_X].channel = (uint8_t) get_param_int(PARAM_RC_X_CHANNEL);
+  sticks[RC_STICK_X].center = (uint16_t) get_param_int(PARAM_RC_X_CENTER);
+  sticks[RC_STICK_X].range = (uint16_t) get_param_int(PARAM_RC_X_RANGE);
+  sticks[RC_STICK_X].positive = false;
+
+  sticks[RC_STICK_Y].channel = (uint8_t) get_param_int(PARAM_RC_Y_CHANNEL);
+  sticks[RC_STICK_Y].center = (uint16_t) get_param_int(PARAM_RC_Y_CENTER);
+  sticks[RC_STICK_Y].range = (uint16_t) get_param_int(PARAM_RC_Y_RANGE);
+  sticks[RC_STICK_Y].positive = false;
+
+  sticks[RC_STICK_Z].channel = (uint8_t) get_param_int(PARAM_RC_Z_CHANNEL);
+  sticks[RC_STICK_Z].center = (uint16_t) get_param_int(PARAM_RC_Z_CENTER);
+  sticks[RC_STICK_Z].range = (uint16_t) get_param_int(PARAM_RC_Z_RANGE);
+  sticks[RC_STICK_Z].positive = false;
+
+  sticks[RC_STICK_F].channel = (uint8_t) get_param_int(PARAM_RC_F_CHANNEL);
+  sticks[RC_STICK_F].center = (uint16_t) get_param_int(PARAM_RC_F_BOTTOM);
+  sticks[RC_STICK_F].range = (uint16_t) get_param_int(PARAM_RC_F_RANGE);
+  sticks[RC_STICK_F].positive = true;
+
+  // TODO directions (probably need to rename some parameters)
+  switches[RC_SWITCH_ARMED].channel = (uint8_t) get_param_int(PARAM_ARM_CHANNEL);
+  switches[RC_SWITCH_ATTITUDE_OVERRIDE].channel = (uint8_t) get_param_int(PARAM_RC_ATTITUDE_OVERRIDE_CHANNEL);
+  switches[RC_SWITCH_THROTTLE_OVERRIDE].channel = (uint8_t) get_param_int(PARAM_RC_THROTTLE_OVERRIDE_CHANNEL);
+  switches[RC_SWITCH_ATTITUDE_TYPE].channel = (uint8_t) get_param_int(PARAM_RC_ATT_CONTROL_TYPE_CHANNEL);
+  switches[RC_SWITCH_F_TYPE].channel = (uint8_t) get_param_int(PARAM_RC_F_CONTROL_TYPE_CHANNEL);
+
+  for (int i = 0; i < NUM_RC_SWITCHES; i++)
+  {
+    switches[i].assigned = switches[i].channel >= 0;
+    _rc_switch_assigned[i] = switches[i].assigned;
+  }
+
+  // TODO initialize values?
+
+  //***************************
 }
 
 bool rc_switch(int16_t channel)
@@ -109,6 +176,60 @@ static void convertPWMtoRad()
                         / (float)get_param_int(PARAM_RC_F_RANGE);
 }
 
+//********************************************
+// NEW
+//********************************************
+bool receive_rc(uint32_t now)
+{
+  static uint32_t last_rc_receive_time = 0;
+
+  if (now - last_rc_receive_time < 20000)
+  {
+    return false;
+  }
+  last_rc_receive_time = now;
+
+  // raw RC values
+  //  for (int i = 0; i < RC_MAX_CHANNELS; i++)
+  for (uint8_t i = 0; i < get_param_int(PARAM_RC_NUM_CHANNELS); i++)
+  {
+    _rc_raw[i] = pwmRead(i);
+  }
+
+  // normalized channels
+//  _rc_chan[RC_STICK_X] = 2.0f * (_rc_raw[get_param_int(PARAM_RC_X_CHANNEL)] - get_param_int(PARAM_RC_X_CENTER)) / (float) get_param_int(PARAM_RC_X_RANGE);
+//  _rc_chan[RC_STICK_Y] = 2.0f * (_rc_raw[get_param_int(PARAM_RC_Y_CHANNEL)] - get_param_int(PARAM_RC_Y_CENTER)) / (float) get_param_int(PARAM_RC_Y_RANGE);
+//  _rc_chan[RC_STICK_Z] = 2.0f * (_rc_raw[get_param_int(PARAM_RC_Z_CHANNEL)] - get_param_int(PARAM_RC_Z_CENTER)) / (float) get_param_int(PARAM_RC_Z_RANGE);
+//  _rc_chan[RC_STICK_F] = (_rc_raw[get_param_int(PARAM_RC_F_CHANNEL)] - get_param_int(PARAM_RC_F_BOTTOM)) / (float) get_param_int(PARAM_RC_F_RANGE);
+  for (uint8_t i = 0; i < NUM_RC_STICKS; i++)
+  {
+    if (sticks[i].positive)
+    {
+      _rc_stick[i] = (_rc_raw[sticks[i].channel] - sticks[i].center) / (float) sticks[i].range;
+    }
+    else
+    {
+      _rc_stick[i] = 2.0f * (_rc_raw[sticks[i].channel] - sticks[i].center) / (float) sticks[i].range;
+    }
+  }
+
+  // switches
+  for (uint8_t i = 0; i < NUM_RC_SWITCHES; i++)
+  {
+    if (switches[i].assigned)
+    {
+      if (switches[i].direction < 0)
+      {
+        _rc_switch[i] = (_rc_raw[switches[i].channel] < 1500);
+      }
+      else
+      {
+        _rc_switch[i] = (_rc_raw[switches[i].channel] > 1500);
+      }
+    }
+  }
+}
+//********************************************
 
 bool receive_rc(uint32_t now)
 {
