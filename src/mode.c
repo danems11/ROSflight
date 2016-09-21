@@ -54,8 +54,7 @@ bool check_mode(uint32_t now)
     if (_armed_state == DISARMED)
     {
       // if left stick is down and to the right
-      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] +
-          _params.values[PARAM_ARM_THRESHOLD]
+      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] + _params.values[PARAM_ARM_THRESHOLD]
           && pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) < (_params.values[PARAM_RC_Z_CENTER] - _params.values[PARAM_RC_Z_RANGE]/2)
           + _params.values[PARAM_ARM_THRESHOLD])
       {
@@ -74,8 +73,7 @@ bool check_mode(uint32_t now)
     else // _armed_state is ARMED
     {
       // if left stick is down and to the left
-      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] +
-          _params.values[PARAM_ARM_THRESHOLD]
+      if (pwmRead(_params.values[PARAM_RC_F_CHANNEL]) < _params.values[PARAM_RC_F_BOTTOM] + _params.values[PARAM_ARM_THRESHOLD]
           && pwmRead(_params.values[PARAM_RC_Z_CHANNEL]) > (_params.values[PARAM_RC_Z_CENTER] + _params.values[PARAM_RC_Z_RANGE]/2)
           - _params.values[PARAM_ARM_THRESHOLD])
       {
